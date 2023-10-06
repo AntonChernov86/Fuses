@@ -1,3 +1,6 @@
+# About
+Just a collection of some Fuses for Davinci Resolve and Fusion.
+
 # Installation
 ## Davinci Resolve
 - Place fuse files in "C:\ProgramData\Blackmagic Design\DaVinci Resolve\Fusion\Fuses" directory
