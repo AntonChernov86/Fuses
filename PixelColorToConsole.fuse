@@ -47,13 +47,16 @@ end
 
 function Process(req)
     local img = InImage:GetValue(req)
-    local pixelCoors = InPixel:GetValue(req)
+    local pixelPosition = InPixel:GetValue(req)
     local p = Pixel()
 
-    img:GetPixel(pixelCoors.X, pixelCoors.Y, p)
+    local pixelX = img.Width * pixelPosition.X;
+    local pixelY = img.Height * pixelPosition.Y;
 
-    print(string.format("Frame %03d\t|\tR:%f\t\tG:%f\t\tB:%f", req.Time, p.R, p.G, p.B))
-    -- print("Frame " .. req.Time .. "\t|\tR:" .. p.R .. "\t|\tG:" .. p.G .. "\t|\tB:" .. p.B)
+    img:GetPixel(pixelX, pixelY, p)
+
+    -- print(string.format("Frame %03d\t|\tR:%f\t\tG:%f\t\tB:%f", req.Time, p.R, p.G, p.B))
+    print(string.format("%f\t%f\t%f", p.R, p.G, p.B))
 
 
     OutImage:Set(req, img)
