@@ -1,0 +1,152 @@
+--[[--
+   LightCheck.fuse
+
+  Make things easy)
+
+--]]--
+
+
+FuRegisterClass('CameraCheck', CT_Tool, {
+    REGS_Category = "Fuses\\Antilatency",
+    REGS_OpIconString = '',
+    REGS_OpDescription = 'Make things easy)',
+    REG_OpNoMask = true,
+    REG_NoBlendCtrls = true,
+    REG_NoObjMatCtrls = true,
+    REG_NoMotionBlurCtrls = true,
+    REG_Source_GlobalCtrls = true,
+    REG_Source_SizeCtrls = true,
+    REG_Source_AspectCtrls = true,
+    REG_Source_DepthCtrls = true,
+    REG_TimeVariant = true,
+    REG_Fuse_NoEdit = false,
+    REG_Fuse_NoReload = false,
+})
+
+
+function Create()
+
+    -- Can't find examples how to load the LUTs and apply them
+    -- InLUT = self:AddInput('LUT', 'LUT', {
+    --     LINKID_DataType="Text",
+    --     INPID_InputControl = "FileControl",
+    --     FC_ClipBrowse = true,
+    -- })
+
+    InResultType = self:AddInput('ResultType', 'ResultType', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "ComboControl",
+        INP_Default  = 0.0,
+        INP_Integer = true,
+        ICD_Width = 0.5,
+        CC_LabelPosition = "Horizontal",
+        {CCS_AddString = "A/RestoredA Dif", },
+        {CCS_AddString = "Restored A", },
+        {CCS_AddString = "B", },
+        {CCS_AddString = "C", },
+    })
+
+    InOutputGain = self:AddInput('Output Gain', 'OutputGain', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "SliderControl",
+        INP_MinAllowed = 0,
+        INP_MaxScale = 512.0,
+        INP_Default = 1.0,
+    })
+
+    InA = self:AddInput("A", "A", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+        INP_Required = true,
+    })
+
+    InAB = self:AddInput("AB", "AB", {
+        LINKID_DataType = "Image",
+        LINK_Main = 2,
+        INP_Required = true,
+    })
+
+    InAC = self:AddInput("AC", "AC", {
+        LINKID_DataType = "Image",
+        LINK_Main = 3,
+        INP_Required = true,
+    })
+
+    InABC = self:AddInput("ABC", "ABC", {
+        LINKID_DataType = "Image",
+        LINK_Main = 4,
+        INP_Required = true,
+    })
+
+    OutImage = self:AddOutput("Output", "Output", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+
+end
+
+
+function Process(req)
+    local resultSwitch = InResultType:GetValue(req).Value
+    local outGain = InOutputGain:GetValue(req).Value
+
+    local a = InA:GetValue(req)
+    local ab = InAB:GetValue(req)
+    local ac = InAC:GetValue(req)
+    local abc = InABC:GetValue(req)
+
+    local b = Image({IMG_Like = a})
+    local c = Image({IMG_Like = a})
+    local bc = Image({IMG_Like = a})
+    local restoredA = Image({IMG_Like = a})
+    local dif = Image({IMG_Like = a})
+
+    b = ab:ChannelOpOf("Subtract", a, {
+        R = "Fg.R",
+        G = "Fg.G",
+        B = "Fg.B",
+        A = nil,
+    })
+
+    c = ac:ChannelOpOf("Subtract", a, {
+        R = "Fg.R",
+        G = "Fg.G",
+        B = "Fg.B",
+        A = nil,
+    })
+
+    bc = b:ChannelOpOf("Add", c, {
+        R = "Fg.R",
+        G = "Fg.G",
+        B = "Fg.B",
+        A = nil,
+    })
+
+    restoredA = abc:ChannelOpOf("Subtract", bc, {
+        R = "Fg.R",
+        G = "Fg.G",
+        B = "Fg.B",
+        A = nil,
+    })
+
+    dif = a:ChannelOpOf("Difference", restoredA, {
+        R = "Fg.R",
+        G = "Fg.G",
+        B = "Fg.B",
+        A = nil,
+    })
+
+    if resultSwitch == 1 then
+        restoredA:Gain(outGain, outGain, outGain, 1)
+        OutImage:Set(req, restoredA)
+    elseif resultSwitch == 2 then
+        b:Gain(outGain, outGain, outGain, 1)
+        OutImage:Set(req, b)
+    elseif resultSwitch == 3 then
+        c:Gain(outGain, outGain, outGain, 1)
+        OutImage:Set(req, c)
+    else
+        dif:Gain(outGain, outGain, outGain, 1)
+        OutImage:Set(req, dif)
+    end
+end

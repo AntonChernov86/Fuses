@@ -1,0 +1,60 @@
+--[[--
+   Test.fuse
+
+  Test fuse
+
+--]]--
+
+
+FuRegisterClass('PixelColorToConsole', CT_Tool, {
+    REGS_Category = "Fuses\\Debug",
+    REGS_OpIconString = '',
+    REGS_OpDescription = 'Prints pixel\'s color to console',
+    REG_OpNoMask = true,
+    REG_NoBlendCtrls = true,
+    REG_NoObjMatCtrls = true,
+    REG_NoMotionBlurCtrls = true,
+    REG_Source_GlobalCtrls = true,
+    REG_Source_SizeCtrls = true,
+    REG_Source_AspectCtrls = true,
+    REG_Source_DepthCtrls = true,
+    REG_TimeVariant = true,
+    REG_Fuse_NoEdit = false,
+    REG_Fuse_NoReload = false,
+})
+
+
+function Create()
+    InPixel = self:AddInput('Pixel', 'Pixel', {
+        LINKID_DataType="Point",
+        INPID_InputControl = "OffsetControl",
+        INPID_PreviewControl = "CrosshairControl",
+        CHC_Style = "DiagonalCross",
+        PC_GrabPriority = -1
+    })
+
+    InImage = self:AddInput("Input", "Input", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+
+    OutImage = self:AddOutput("Output", "Output", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+end
+
+
+function Process(req)
+    local img = InImage:GetValue(req)
+    local pixelCoors = InPixel:GetValue(req)
+    local p = Pixel()
+
+    img:GetPixel(pixelCoors.X, pixelCoors.Y, p)
+
+    print(string.format("Frame %03d\t|\tR:%f\t\tG:%f\t\tB:%f", req.Time, p.R, p.G, p.B))
+    -- print("Frame " .. req.Time .. "\t|\tR:" .. p.R .. "\t|\tG:" .. p.G .. "\t|\tB:" .. p.B)
+
+
+    OutImage:Set(req, img)
+end
