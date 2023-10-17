@@ -88,8 +88,6 @@ function BinToFloat32(bin)
   end
 
 function Process(req)
-    print(_VERSION)
-
     local filePath = InFile:GetValue(req).Value
 
     if filePath == nil or filePath == "" then
