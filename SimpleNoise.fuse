@@ -1,0 +1,145 @@
+--[[--
+   SimpleNoise.fuse
+
+  Simple noise generator
+  based on SourceTest.Fuse from https://www.steakunderwater.com/VFXPedia/96.0.243.189/images/SourceTest.Fuse
+
+--]]--
+
+
+FuRegisterClass('NoiseGenerator', CT_Tool, {
+    REGS_Category = "Fuses",
+    REGS_OpIconString = '',
+    REGS_OpDescription = 'Simple noise generator',
+    REG_OpNoMask = true,
+    REG_NoBlendCtrls = true,
+    REG_NoObjMatCtrls = true,
+    REG_NoMotionBlurCtrls = true,
+    REG_Source_GlobalCtrls = true,
+    REG_Source_SizeCtrls = true,
+    REG_Source_AspectCtrls = true,
+    REG_Source_DepthCtrls = true,
+    REG_TimeVariant = true,
+    REG_Fuse_NoEdit = false,
+    REG_Fuse_NoReload = false,
+})
+
+
+function Create()
+    InWidth = self:AddInput('Width', 'width', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "SliderControl",
+        INP_MinAllowed = 1,
+        INP_MaxScale = 100.0,
+        INP_Default = 1920.0,
+    })
+
+    InHeight = self:AddInput('Height', 'height', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "SliderControl",
+        INP_MinAllowed = 1,
+        INP_MaxScale = 100.0,
+        INP_Default = 1080.0,
+    })
+
+    InAmplitude = self:AddInput('Amplitude', 'amplitude', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "SliderControl",
+        INP_MinAllowed = 0.0,
+        INP_MaxScale = 100.0,
+        INP_Default = 1.0,
+    })
+
+    InGrayscale = self:AddInput('Grayscale', 'grayscale', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 0.0,
+        ICD_Width = 1.0,
+    })
+
+    InMidpointIsZero = self:AddInput('Midpoint Is Zero', 'midpointIsZero', {
+        LINKID_DataType="Number",
+        INPID_InputControl = "CheckboxControl",
+        INP_Integer = true,
+        INP_Default = 1.0,
+        ICD_Width = 1.0,
+    })
+
+    OutImage = self:AddOutput("Output", "Output", {
+        LINKID_DataType = "Image",
+        LINK_Main = 1,
+    })
+end
+
+function GetRandomValue(random, midpointIsZero, amplitude)
+    local val = random()
+
+    if midpointIsZero == 1 then
+        val = val * 2.0 - 1.0
+    end
+
+    return val * amplitude
+end
+
+function Process(req)
+    local grayscale = InGrayscale:GetValue(req).Value
+    local midpointIsZero = InMidpointIsZero:GetValue(req).Value
+
+    print(grayscale)
+    print(midpointIsZero)
+
+    local amplitude = InAmplitude:GetValue(req).Value
+
+    local width = InWidth:GetValue(req).Value
+    local height = InHeight:GetValue(req).Value
+
+    local imgAttribs = {
+        IMG_Document = self.Comp,
+        { IMG_Channel = "Red", },
+        { IMG_Channel = "Green", },
+        { IMG_Channel = "Blue", },
+        { IMG_Channel = "Alpha", },
+        IMG_Width = width,
+		IMG_Height = height,
+		IMG_XScale = XAspect,
+		IMG_YScale = YAspect,
+		IMAT_OriginalWidth = width,
+		IMAT_OriginalHeight = height,
+		IMG_Quality = not req:IsQuick(),
+		IMG_MotionBlurQuality = not req:IsNoMotionBlur(),
+    }
+
+    if not req:IsStampOnly() then
+		imgAttribs.IMG_ProxyScale = 1
+	end
+
+    if SourceDepth ~= 0 then
+		imgAttribs.IMG_Depth = SourceDepth
+	end
+
+    local img = Image(imgAttribs)
+	local random = math.random
+	local p = Pixel({A=1})
+
+	for y = 0, height - 1 do
+		if self.Status ~= "OK" then break end
+		
+		for x = 0, width - 1 do
+            if grayscale == 1 then
+                local val = GetRandomValue(random, midpointIsZero, amplitude)
+                p.R = val
+                p.G = val
+                p.B = val
+            else
+                p.R = GetRandomValue(random, midpointIsZero, amplitude)
+                p.G = GetRandomValue(random, midpointIsZero, amplitude)
+                p.B = GetRandomValue(random, midpointIsZero, amplitude)
+            end
+
+			img:SetPixel(x, y, p)
+		end
+	end
+	
+	OutImage:Set(req, img)
+end
