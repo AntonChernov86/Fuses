@@ -86,9 +86,6 @@ function Process(req)
     local grayscale = InGrayscale:GetValue(req).Value
     local midpointIsZero = InMidpointIsZero:GetValue(req).Value
 
-    print(grayscale)
-    print(midpointIsZero)
-
     local amplitude = InAmplitude:GetValue(req).Value
 
     local width = InWidth:GetValue(req).Value
